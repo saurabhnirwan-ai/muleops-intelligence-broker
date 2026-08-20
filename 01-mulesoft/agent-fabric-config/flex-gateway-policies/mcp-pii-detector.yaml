@@ -1,0 +1,29 @@
+# Flex Gateway Policy: MCP PII Detector
+# Masks PII in MCP tool responses (SSN, credit cards, emails, phone numbers)
+# Apply only to the Governance MCP Server provider instance
+
+apiVersion: gateway.mulesoft.com/v1alpha1
+kind: Policy
+metadata:
+  name: mcp-pii-detector
+  namespace: muleops
+spec:
+  policyRef:
+    name: mcp-pii-detector
+    namespace: mulesoft
+  config:
+    maskingCharacter: "****"
+    detectionPatterns:
+      - name: SSN
+        regex: "\\b\\d{3}-\\d{2}-\\d{4}\\b"
+      - name: CreditCard
+        regex: "\\b(?:\\d{4}[\\s-]?){3}\\d{4}\\b"
+      - name: Email
+        regex: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+      - name: PhoneUS
+        regex: "\\b(?:\\+1[-.]?)?\\(?\\d{3}\\)?[-.]?\\d{3}[-.]?\\d{4}\\b"
+    applyToRequest: false
+    applyToResponse: true
+  rules:
+    - methods: POST
+      uriTemplateRegex: "/mcp/tools/.*"

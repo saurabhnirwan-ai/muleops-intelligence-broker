@@ -1,0 +1,25 @@
+# Flex Gateway Policy: JWT Validation
+# Validates Agent Fabric-issued JWT tokens on all agent calls
+
+apiVersion: gateway.mulesoft.com/v1alpha1
+kind: Policy
+metadata:
+  name: jwt-validation
+  namespace: muleops
+spec:
+  policyRef:
+    name: jwt-validation
+    namespace: mulesoft
+  config:
+    jwtOrigin: httpBearerAuthenticationHeader
+    signingMethod: RSA
+    signingKeyLength: 256
+    jwksUrl: "https://anypoint.mulesoft.com/accounts/api/v2/oauth2/keys"
+    skipClientIdValidation: false
+    validateAudClaim: true
+    mandatoryExpClaim: true
+    mandatoryNbfClaim: false
+    validateCustomClaim: false
+  rules:
+    - methods: GET, POST, PUT, DELETE, PATCH
+      uriTemplateRegex: ".*"

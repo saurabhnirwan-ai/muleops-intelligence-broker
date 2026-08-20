@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core
+        http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http
+        http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/tls
+        http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+
+  <configuration-properties file="config.yaml" doc:name="Configuration Properties" />
+
+  <!-- HTTP Listener for MCP tool endpoints -->
+  <http:listener-config name="HTTP_Listener_Config" doc:name="HTTP Listener Config">
+    <http:listener-connection host="${http.listener.host}" port="${http.listener.port}" />
+  </http:listener-config>
+
+  <!-- TLS Context for Splunk Cloud (accepts self-signed / untrusted certs) -->
+  <tls:context name="Splunk_TLS_Context" doc:name="Splunk TLS Context">
+    <tls:trust-store insecure="true" />
+  </tls:context>
+
+  <!-- HTTP Request Config: Splunk HEC -->
+  <http:request-config name="Splunk_HEC_Request_Config" doc:name="Splunk HEC Config" basePath="/services/collector">
+    <http:request-connection protocol="HTTPS" host="${splunk.hec.host}" port="${splunk.hec.port}"
+      tlsContext="Splunk_TLS_Context" />
+  </http:request-config>
+
+  <!-- HTTP Request Config: Anypoint Account API (environments, org info) -->
+  <http:request-config name="Anypoint_API_Request_Config" doc:name="Anypoint Account API" basePath="/accounts/api">
+    <http:request-connection protocol="HTTPS" host="anypoint.mulesoft.com" port="443" />
+  </http:request-config>
+
+  <!-- HTTP Request Config: CloudHub 2.0 Application Manager API (deployed applications) -->
+  <http:request-config name="CloudHub_API_Request_Config" doc:name="CloudHub 2.0 Application Manager API" basePath="/amc/application-manager/api/v2">
+    <http:request-connection protocol="HTTPS" host="anypoint.mulesoft.com" port="443" />
+  </http:request-config>
+
+</mule>

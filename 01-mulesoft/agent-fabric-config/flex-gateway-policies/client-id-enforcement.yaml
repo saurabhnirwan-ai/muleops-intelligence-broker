@@ -1,0 +1,19 @@
+# Flex Gateway Policy: Client-ID Enforcement
+# Applied to ALL agent provider instances
+
+apiVersion: gateway.mulesoft.com/v1alpha1
+kind: Policy
+metadata:
+  name: client-id-enforcement
+  namespace: muleops
+spec:
+  policyRef:
+    name: client-id-enforcement
+    namespace: mulesoft
+  config:
+    credentialsOriginHasHttpBasicAuthenticationHeader: httpBasicAuthenticationHeader
+    clientIdExpression: "#[attributes.headers['client_id']]"
+    clientSecretExpression: "#[attributes.headers['client_secret']]"
+  rules:
+    - methods: GET, POST, PUT, DELETE, PATCH
+      uriTemplateRegex: ".*"

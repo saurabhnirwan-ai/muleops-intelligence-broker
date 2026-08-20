@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core
+        http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http
+        http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/ee/core
+        http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+
+  <!-- MCP TOOL 0: MCP Streamable HTTP protocol endpoint (initialize + tools/list + tools/call) -->
+  <!-- Required by MuleSoft Agent Fabric MCP Connector to discover and call tools -->
+  <flow name="mcp-protocol-handler" doc:id="mcp-protocol-flow">
+    <http:listener config-ref="HTTP_Listener_Config" path="/mcp" allowedMethods="POST" doc:name="MCP Protocol Listener">
+      <http:response statusCode="#[vars.httpStatus default 200]" />
+    </http:listener>
+    <ee:transform doc:name="Route MCP Method" doc:id="route-mcp-method">
+      <ee:variables>
+        <ee:set-variable variableName="mcpMethod"><![CDATA[%dw 2.0
+output application/java
+---
+payload.method default ""]]></ee:set-variable>
+        <ee:set-variable variableName="mcpId"><![CDATA[%dw 2.0
+output application/java
+---
+payload.id default 0]]></ee:set-variable>
+      </ee:variables>
+    </ee:transform>
+    <choice doc:name="MCP Method Router">
+      <when expression="#[vars.mcpMethod == 'initialize']" doc:name="initialize">
+        <ee:transform doc:name="MCP Initialize Response" doc:id="mcp-init-response">
+          <ee:message>
+            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  jsonrpc: "2.0",
+  id: vars.mcpId,
+  result: {
+    protocolVersion: "2024-11-05",
+    capabilities: {
+      tools: { listChanged: false }
+    },
+    serverInfo: {
+      name: "mule-app-governance-mcp",
+      version: "1.0.0"
+    }
+  }
+}]]></ee:set-payload>
+          </ee:message>
+        </ee:transform>
+      </when>
+      <when expression="#[vars.mcpMethod == 'tools/list']" doc:name="tools/list">
+        <ee:transform doc:name="MCP Tools List Response" doc:id="mcp-tools-list">
+          <ee:message>
+            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  jsonrpc: "2.0",
+  id: vars.mcpId,
+  result: {
+    tools: [
+      {
+        name: "get-compliance-report",
+        description: "Get compliance status for Mule applications in a given environment. Returns compliant and non-compliant apps with issue details.",
+        inputSchema: {
+          "type": "object",
+          properties: {
+            appName: { "type": "string", description: "Application name to filter (use 'all' for all apps)" },
+            environment: { "type": "string", description: "Anypoint environment name (e.g. Production, Sandbox)" }
+          },
+          required: []
+        }
+      },
+      {
+        name: "write-ado-log",
+        description: "Write an Application Data Observability (ADO) alert log entry to Splunk. Triggers a PagerDuty incident within 15 minutes if criteria are met.",
+        inputSchema: {
+          "type": "object",
+          properties: {
+            severity: { "type": "string", description: "Severity level: LOW, MEDIUM, HIGH, or CRITICAL" },
+            message: { "type": "string", description: "Log message describing the alert" },
+            source: { "type": "string", description: "Source system name" }
+          },
+          required: ["severity", "message"]
+        }
+      }
+    ]
+  }
+}]]></ee:set-payload>
+          </ee:message>
+        </ee:transform>
+      </when>
+      <when expression="#[vars.mcpMethod == 'tools/call']" doc:name="tools/call">
+        <ee:transform doc:name="Extract Tool Name and Args" doc:id="extract-tool-call">
+          <ee:message>
+            <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload.params.arguments default {}]]></ee:set-payload>
+          </ee:message>
+          <ee:variables>
+            <ee:set-variable variableName="toolName"><![CDATA[%dw 2.0
+output application/java
+---
+payload.params.name default ""]]></ee:set-variable>
+          </ee:variables>
+        </ee:transform>
+        <!-- Delegate to the existing HTTP tool endpoint on localhost -->
+        <http:request method="POST"
+          url="#['http://localhost:' ++ p('http.listener.port') ++ '/mcp/tools/' ++ vars.toolName]"
+          doc:name="Call Tool Endpoint">
+          <http:headers><![CDATA[#[{"Content-Type": "application/json"}]]]></http:headers>
+        </http:request>
+        <ee:transform doc:name="Wrap as MCP Tool Result" doc:id="wrap-tool-result">
+          <ee:message>
+            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var toolResult = payload
+---
+{
+  jsonrpc: "2.0",
+  id: vars.mcpId,
+  result: {
+    content: [{ "type": "text", text: write(toolResult, "application/json") }]
+  }
+}]]></ee:set-payload>
+          </ee:message>
+        </ee:transform>
+      </when>
+      <when expression="#[vars.mcpMethod == 'notifications/initialized']" doc:name="notifications/initialized">
+        <!-- Return HTTP 202 Accepted — MCP Streamable HTTP transport skips body parsing for 202 -->
+        <set-variable variableName="httpStatus" value="#[202]" doc:name="Set 202 Accepted" />
+        <ee:transform doc:name="Empty body for notification" doc:id="mcp-notification-response">
+          <ee:message>
+            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+null]]></ee:set-payload>
+          </ee:message>
+        </ee:transform>
+      </when>
+      <otherwise doc:name="unknown method">
+        <ee:transform doc:name="Method not found error" doc:id="mcp-unknown-response">
+          <ee:message>
+            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  jsonrpc: "2.0",
+  id: vars.mcpId,
+  error: { code: -32601, message: "Method not found: " ++ vars.mcpMethod }
+}]]></ee:set-payload>
+          </ee:message>
+        </ee:transform>
+      </otherwise>
+    </choice>
+  </flow>
+
+  <!-- MCP TOOL 1: get-compliance-report -->
+  <flow name="mcp-get-compliance-report" doc:id="mcp-compliance-flow">
+    <http:listener config-ref="HTTP_Listener_Config" path="/mcp/tools/get-compliance-report" allowedMethods="POST" doc:name="MCP Compliance Listener" />
+    <set-variable variableName="oboToken"
+      value="#[attributes.headers['X-OBO-Token'] default '']"
+      doc:name="Extract OBO Token" />
+    <set-variable variableName="initiatedBy"
+      value="#[attributes.headers['X-Initiated-By'] default '']"
+      doc:name="Extract Initiated By" />
+    <set-variable variableName="correlationId"
+      value="#[attributes.headers['X-Correlation-ID'] default correlationId]"
+      doc:name="Extract Correlation ID" />
+    <logger level="INFO"
+      message="#['[MCP] OBO | Tool: mcp-get-compliance-report | InitiatedBy: ' ++ vars.initiatedBy ++ ' | CorrelationID: ' ++ vars.correlationId ++ ' | OBO: ' ++ (vars.oboToken[0 to 39] default 'N/A')]"
+      doc:name="Log OBO Token" />
+    <logger level="INFO" message="#['[MCP] get-compliance-report | App: ' ++ (payload.appName default 'ALL')]" />
+    <set-variable variableName="reqAppName" value="#[payload.appName default 'all']" doc:name="Set appName" />
+    <set-variable variableName="reqEnvironment" value="#[payload.environment default 'Sandbox']" doc:name="Set environment" />
+    <flow-ref name="get-anypoint-token-flow" doc:name="Get Anypoint Token" />
+    <http:request config-ref="Anypoint_API_Request_Config" method="GET"
+      path="#['/organizations/' ++ p('anypoint.org.id') ++ '/environments']" doc:name="Get Environments">
+      <http:headers><![CDATA[#[{"Authorization": "Bearer " ++ vars.anypointToken}]]]></http:headers>
+    </http:request>
+    <ee:transform doc:name="Resolve Environment" doc:id="extract-env-id">
+      <ee:variables>
+        <ee:set-variable variableName="envId"><![CDATA[%dw 2.0
+output application/java
+var allEnvs = payload.data default []
+var reqEnvLower = lower(vars.reqEnvironment)
+var exactEnvMatch = allEnvs filter (lower($.name) == reqEnvLower)
+var fuzzyEnvMatch = allEnvs filter (lower($.name) contains reqEnvLower or reqEnvLower contains lower($.name))
+var envMatches = if (!isEmpty(exactEnvMatch)) exactEnvMatch else fuzzyEnvMatch
+---
+(envMatches[0].id) default ""]]></ee:set-variable>
+        <ee:set-variable variableName="envName"><![CDATA[%dw 2.0
+output application/java
+var allEnvs = payload.data default []
+var reqEnvLower = lower(vars.reqEnvironment)
+var exactEnvMatch = allEnvs filter (lower($.name) == reqEnvLower)
+var fuzzyEnvMatch = allEnvs filter (lower($.name) contains reqEnvLower or reqEnvLower contains lower($.name))
+var envMatches = if (!isEmpty(exactEnvMatch)) exactEnvMatch else fuzzyEnvMatch
+---
+(envMatches[0].name) default vars.reqEnvironment]]></ee:set-variable>
+        <ee:set-variable variableName="allEnvNames"><![CDATA[%dw 2.0
+output application/java
+---
+(payload.data default []) map $.name]]></ee:set-variable>
+      </ee:variables>
+    </ee:transform>
+    <choice doc:name="Env Found?">
+      <when expression="#[vars.envId == '']" doc:name="No match">
+        <ee:transform doc:name="Return Available Environments">
+          <ee:message>
+            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  reportGeneratedAt: now() as String {format: "yyyy-MM-dd'T'HH:mm:ss'Z'"},
+  environment: vars.reqEnvironment,
+  totalApplications: 0,
+  error: "Environment '" ++ vars.reqEnvironment ++ "' was not found in your Anypoint organization.",
+  availableEnvironments: vars.allEnvNames,
+  suggestion: "Please retry with one of the available environment names listed above."
+}]]></ee:set-payload>
+          </ee:message>
+        </ee:transform>
+      </when>
+      <otherwise doc:name="Env resolved">
+        <http:request config-ref="CloudHub_API_Request_Config" method="GET"
+          path="#['/organizations/' ++ p('anypoint.org.id') ++ '/environments/' ++ vars.envId ++ '/deployments']"
+          doc:name="Get CloudHub 2.0 Deployments">
+          <http:headers><![CDATA[#[{"Authorization": "Bearer " ++ vars.anypointToken}]]]></http:headers>
+        </http:request>
+        <ee:transform doc:name="Build Compliance Report" doc:id="build-report">
+          <ee:message>
+            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var apps = payload.content default []
+var filtered = if (vars.reqAppName == "all") apps
+               else apps filter ($.name contains vars.reqAppName)
+fun getRuntimeVersion(app) =
+  ((app.artifact.muleVersion.version) default
+   (app.artifact.muleVersion default "unknown")) as String
+fun getAppStatus(app) =
+  app.currentStatus default app.desiredStatus default "UNKNOWN"
+fun isCompliant(app) =
+  (getRuntimeVersion(app) startsWith "4.9" or
+   getRuntimeVersion(app) startsWith "4.8" or
+   getRuntimeVersion(app) startsWith "4.7")
+  and (getAppStatus(app) == "RUNNING" or getAppStatus(app) == "STARTED" or getAppStatus(app) == "APPLIED")
+---
+{
+  reportGeneratedAt: now() as String {format: "yyyy-MM-dd'T'HH:mm:ss'Z'"},
+  environment: vars.envName,
+  totalApplications: sizeOf(filtered),
+  applications: filtered map (app) -> {
+    name: app.name default "unknown",
+    status: getAppStatus(app),
+    runtimeVersion: getRuntimeVersion(app),
+    complianceStatus: if (isCompliant(app)) "COMPLIANT" else "NON_COMPLIANT",
+    issues: ([]
+      ++ (if (!(getAppStatus(app) == "RUNNING" or getAppStatus(app) == "STARTED" or getAppStatus(app) == "APPLIED"))
+            ["App not running: " ++ getAppStatus(app)]
+          else [])
+      ++ (if (!(getRuntimeVersion(app) startsWith "4.9" or
+               getRuntimeVersion(app) startsWith "4.8" or
+               getRuntimeVersion(app) startsWith "4.7"))
+            ["Runtime below minimum 4.7: " ++ getRuntimeVersion(app)]
+          else [])
+    )
+  }
+}]]></ee:set-payload>
+          </ee:message>
+        </ee:transform>
+      </otherwise>
+    </choice>
+  </flow>
+
+  <!-- MCP TOOL 2: write-ado-log -->
+  <flow name="mcp-write-ado-log" doc:id="mcp-ado-flow">
+    <http:listener config-ref="HTTP_Listener_Config" path="/mcp/tools/write-ado-log" allowedMethods="POST" doc:name="MCP ADO Log Listener" />
+    <set-variable variableName="oboToken"
+      value="#[attributes.headers['X-OBO-Token'] default '']"
+      doc:name="Extract OBO Token" />
+    <set-variable variableName="initiatedBy"
+      value="#[attributes.headers['X-Initiated-By'] default '']"
+      doc:name="Extract Initiated By" />
+    <set-variable variableName="correlationId"
+      value="#[attributes.headers['X-Correlation-ID'] default correlationId]"
+      doc:name="Extract Correlation ID" />
+    <logger level="INFO"
+      message="#['[MCP] OBO | Tool: mcp-write-ado-log | InitiatedBy: ' ++ vars.initiatedBy ++ ' | CorrelationID: ' ++ vars.correlationId ++ ' | OBO: ' ++ (vars.oboToken[0 to 39] default 'N/A')]"
+      doc:name="Log OBO Token" />
+    <logger level="INFO" message="#['[MCP] write-ado-log | Severity: ' ++ (payload.severity default 'INFO') ++ ' | Message: ' ++ (payload.message default '')]" />
+    <set-variable variableName="adoSeverity" value="#[payload.severity default 'INFO']" doc:name="Set severity" />
+    <set-variable variableName="adoMessage" value="#[payload.message default 'ADO log entry']" doc:name="Set message" />
+    <set-variable variableName="adoSource" value="#[payload.source default 'muleops-broker']" doc:name="Set source" />
+    <ee:transform doc:name="Build Splunk HEC Event" doc:id="build-hec-event">
+      <ee:message>
+        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  index: p('splunk.index'),
+  sourcetype: "muleops:ado",
+  source: vars.adoSource,
+  event: {
+    timestamp: now() as String {format: "yyyy-MM-dd'T'HH:mm:ss'Z'"},
+    severity: vars.adoSeverity,
+    message: vars.adoMessage,
+    logType: "ADO",
+    origin: "muleops-governance-mcp",
+    brokerCorrelationId: vars.correlationId default uuid()
+  }
+}]]></ee:set-payload>
+      </ee:message>
+    </ee:transform>
+    <http:request config-ref="Splunk_HEC_Request_Config" method="POST" path="/" doc:name="Write to Splunk HEC">
+      <http:headers><![CDATA[#[{"Authorization": "Splunk " ++ p('splunk.hec.token'), "Content-Type": "application/json"}]]]></http:headers>
+      <http:response-validator>
+        <http:success-status-code-validator values="200..299" />
+      </http:response-validator>
+    </http:request>
+    <ee:transform doc:name="Build ADO Log Response" doc:id="build-ado-response">
+      <ee:message>
+        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  success: true,
+  message: "ADO log written to Splunk. A PagerDuty incident will be created within 15 minutes if the alert criteria are met.",
+  severity: vars.adoSeverity,
+  loggedAt: now() as String {format: "yyyy-MM-dd'T'HH:mm:ss'Z'"},
+  splunkIndex: p('splunk.index')
+}]]></ee:set-payload>
+      </ee:message>
+    </ee:transform>
+    <logger level="INFO" message="#['[MCP] ADO log written to Splunk | Severity: ' ++ vars.adoSeverity]" />
+  </flow>
+
+  <!-- MCP TOOL 3: health check -->
+  <flow name="mcp-health-check" doc:id="mcp-health-flow">
+    <http:listener config-ref="HTTP_Listener_Config" path="/api/health" allowedMethods="GET" doc:name="Health Check" />
+    <ee:transform doc:name="Health Response" doc:id="mcp-health-response">
+      <ee:message>
+        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  status: "UP",
+  service: "muleops-governance-mcp",
+  version: "1.0.0",
+  tools: ["get-compliance-report", "write-ado-log"],
+  timestamp: now() as String {format: "yyyy-MM-dd'T'HH:mm:ss'Z'"}
+}]]></ee:set-payload>
+      </ee:message>
+    </ee:transform>
+  </flow>
+
+  <!-- UTILITY: get-anypoint-token -->
+  <flow name="get-anypoint-token-flow" doc:id="get-token-flow">
+    <ee:transform doc:name="Build Token Request" doc:id="build-token-req">
+      <ee:message>
+        <ee:set-payload><![CDATA[%dw 2.0
+output application/x-www-form-urlencoded
+---
+{
+  grant_type: "client_credentials",
+  client_id: p('anypoint.client.id'),
+  client_secret: p('anypoint.client.secret')
+}]]></ee:set-payload>
+      </ee:message>
+    </ee:transform>
+    <http:request method="POST" url="https://anypoint.mulesoft.com/accounts/api/v2/oauth2/token" doc:name="Get Token">
+      <http:headers><![CDATA[#[{"Content-Type": "application/x-www-form-urlencoded"}]]]></http:headers>
+    </http:request>
+    <set-variable variableName="anypointToken" value="#[payload.access_token]" doc:name="Store Token" />
+  </flow>
+
+</mule>

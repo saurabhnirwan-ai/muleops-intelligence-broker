@@ -1,0 +1,20 @@
+{
+  "main": "agent-network.yaml",
+  "name": "muleops-intelligence-broker",
+  "classifier": "agent-network",
+  "organizationId": "2dc1098b-48e1-496e-9631-6fe1cf3bbda7",
+  "descriptorVersion": "1.0.0",
+  "tags": [
+    "muleops",
+    "operations",
+    "pagerduty",
+    "splunk",
+    "cloudhub",
+    "agent-network"
+  ],
+  "apiVersion": "v1",
+  "dependencies": [],
+  "groupId": "2dc1098b-48e1-496e-9631-6fe1cf3bbda7",
+  "assetId": "muleops-intelligence-broker",
+  "version": "1.0.0"
+}

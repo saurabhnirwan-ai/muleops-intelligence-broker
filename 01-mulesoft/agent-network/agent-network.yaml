@@ -1,0 +1,143 @@
+schemaVersion: 1.0.0
+label: MuleOps Intelligence Broker
+brokers:
+  muleops_intelligence_broker:
+    card:
+      protocolVersion: 0.3.0
+      name: MuleOps Intelligence Broker
+      description: Multi-agent orchestration network for unified operational intelligence across PagerDuty, Splunk, and CloudHub applications.
+      url: https://mia-integration-gateway-b1r8p2.5sc6y6-1.usa-e2.cloudhub.io/muleops_intelligence_broker
+      capabilities:
+        pushNotifications: false
+      version: 1.0.0
+      defaultInputModes:
+        - text/plain
+      defaultOutputModes:
+        - text/plain
+      skills:
+        - id: ops-query
+          name: Operational Intelligence Query
+          description: Routes natural-language operational queries to PagerDuty, Splunk, or CloudHub specialist agents.
+          examples:
+            - What are the active P1 incidents right now?
+            - Search Splunk for timeout errors in the last hour
+            - Who is currently on-call for the integration team?
+            - How many apps in BT-INTEGRATION are not running Java 17?
+            - Check compliance status for the payment-processing app
+            - What ADO alerts fired in the last 15 minutes?
+          inputModes:
+            - text/plain
+          outputModes:
+            - text/plain
+          tags:
+            - operations
+            - muleops
+    spec:
+      llm:
+        ref:
+          name: gemini-flash
+        configuration:
+          model: gemini-3.5-flash-lite
+      instructions:
+        - |
+          You are the MuleOps Intelligence Broker — an expert operations assistant
+          for a MuleSoft integration platform team.
+
+          Analyze the user's operational query and route it to the correct specialist agent:
+
+          - Use pagerdutyAgent for: incidents, alerts, on-call schedules, escalation policies,
+            P1/P2 issues, acknowledge, PagerDuty services/teams
+          - Use splunkAgent for: log search, error patterns, SPL queries, ADO alerts,
+            observability data, timeout/exception analysis, Splunk searches
+          - Use integrationSystemAgent for: CloudHub application metadata, vCore usage,
+            runtime versions, Java version compliance, static IPs, business groups,
+            app deployment status, BT-INTEGRATION queries, worker counts
+          For multi-domain queries (e.g. find an app with errors AND check active incidents),
+          call multiple agents and consolidate their responses.
+
+          For compliance checks, call the get-compliance-report tool on governanceMcp.
+          For writing Application Data Observability alerts to Splunk, call write-ado-log.
+
+          Always respond professionally and concisely. Use bullet points for lists.
+          Include IDs, timestamps, and status values in your responses.
+      links:
+        - agent:
+            ref:
+              name: pagerdutyAgent
+        - agent:
+            ref:
+              name: splunkAgent
+        - agent:
+            ref:
+              name: integrationSystemAgent
+      tools:
+        - mcp:
+            ref:
+              name: governanceMcp
+
+agents:
+  pagerdutyAgent:
+    label: PagerDuty Specialist Agent
+    metadata:
+      protocol: a2a
+      platform: Other
+  splunkAgent:
+    label: Splunk Ops Specialist Agent
+    metadata:
+      protocol: a2a
+      platform: Other
+  integrationSystemAgent:
+    label: Integration System Agent
+    metadata:
+      protocol: a2a
+      platform: Other
+
+mcpServers:
+  governanceMcp:
+    label: Mule App Governance MCP Server
+    metadata:
+      transport:
+        kind: streamableHttp
+        path: /mcp
+
+llmProviders:
+  gemini-flash:
+    label: Gemini Flash
+    description: Google Gemini 3.5 Flash Lite for operational intelligence routing and multi-agent orchestration
+    metadata:
+      platform: Gemini
+
+connections:
+  pagerdutyAgentConnection:
+    kind: agent
+    ref:
+      name: pagerdutyAgent
+    spec:
+      url: http://3.129.60.192:8080
+  splunkAgentConnection:
+    kind: agent
+    ref:
+      name: splunkAgent
+    spec:
+      url: http://3.129.60.192:8081
+  integrationSystemAgentConnection:
+    kind: agent
+    ref:
+      name: integrationSystemAgent
+    spec:
+      url: http://3.129.60.192:8082
+  governanceMcpConnection:
+    kind: mcp
+    ref:
+      name: governanceMcp
+    spec:
+      url: https://muleops-governance-mcp-b1r8p2.5sc6y6-1.usa-e2.cloudhub.io
+  gemini-flash-connection:
+    kind: llm
+    ref:
+      name: gemini-flash
+    spec:
+      url: https://generativelanguage.googleapis.com
+      configuration:
+        apiKey: ${GEMINI_API_KEY}
+        timeout: 600000

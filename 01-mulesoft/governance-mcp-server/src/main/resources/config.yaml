@@ -1,0 +1,23 @@
+# Mule App Governance MCP Server Configuration
+
+splunk:
+  hec:
+    url: "https://${splunk.hec.host}:${splunk.hec.port}/services/collector"
+    token: "${splunk.hec.token}"
+    host: "${splunk.hec.host}"
+    port: "${splunk.hec.port}"
+  index: "muleops_ado"
+
+anypoint:
+  org:
+    id: "${anypoint.org.id}"
+  client:
+    id: "${anypoint.client.id}"
+    secret: "${anypoint.client.secret}"
+  platform:
+    url: "https://anypoint.mulesoft.com"
+
+http:
+  listener:
+    host: "0.0.0.0"
+    port: "8081"

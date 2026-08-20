@@ -1,0 +1,19 @@
+# Flex Gateway Policy: Attribute-Based Access Control (ABAC)
+# Restricts which clients can invoke which agents
+
+apiVersion: gateway.mulesoft.com/v1alpha1
+kind: Policy
+metadata:
+  name: abac-agent-access
+  namespace: muleops
+spec:
+  policyRef:
+    name: message-logging
+    namespace: mulesoft
+  config:
+    message: "ABAC check - client: #[attributes.headers['client_id']] accessing agent: #[attributes.requestPath]"
+    level: INFO
+    firstSection: true
+  rules:
+    - methods: POST
+      uriTemplateRegex: "/a2a.*"

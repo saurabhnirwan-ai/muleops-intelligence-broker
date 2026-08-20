@@ -1,0 +1,58 @@
+# Environment files — never commit secrets
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+env/
+
+# MuleSoft / Maven build artifacts
+target/
+*.jar
+*.war
+*.zip
+
+# SSH keys & certificates
+*.pem
+*.key
+*.p12
+*.jks
+*.crt
+docs/sf_certificate.crt
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Logs
+*.log
+pagerduty-agent.log
+splunk-agent.log
+integration-agent.log

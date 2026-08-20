@@ -1,0 +1,24 @@
+Service:
+  ServiceName: muleops-demo-broker
+  SourceConfiguration:
+    ImageRepository:
+      ImageIdentifier: "419799697348.dkr.ecr.us-east-1.amazonaws.com/muleops-demo-broker:1.0.0"
+      ImageRepositoryType: ECR
+      ImageConfiguration:
+        Port: "9000"
+          RuntimeEnvironmentVariables:
+          SLACK_BOT_TOKEN: "${SLACK_BOT_TOKEN}"
+          PAGERDUTY_AGENT_URL: "http://3.129.60.192:8080"
+          SPLUNK_AGENT_URL: "http://3.129.60.192:8081"
+          INTEGRATION_AGENT_URL: "http://3.129.60.192:8082"
+    AutoDeploymentsEnabled: false
+  InstanceConfiguration:
+    Cpu: "0.25 vCPU"
+    Memory: "0.5 GB"
+  HealthCheckConfiguration:
+    Protocol: HTTP
+    Path: /api/health
+    Interval: 30
+    Timeout: 10
+    HealthyThreshold: 2
+    UnhealthyThreshold: 3

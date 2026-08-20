@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>2dc1098b-48e1-496e-9631-6fe1cf3bbda7</groupId>
+  <artifactId>muleops-governance-mcp</artifactId>
+  <version>1.0.2</version>
+  <packaging>mule-application</packaging>
+
+  <name>Mule App Governance MCP Server</name>
+  <description>
+    MCP Server providing tools to fetch Mule application compliance status
+    and write Application Data Observability (ADO) logs to Splunk.
+    v1.0.2: Added /mcp Streamable HTTP endpoint for MuleSoft Agent Fabric MCP Connector.
+  </description>
+
+  <properties>
+    <app.runtime>4.9.16</app.runtime>
+    <mule.maven.plugin.version>4.3.0</mule.maven.plugin.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <anypoint.client.id>7814a39ada824753ba6ef9689ef35c97</anypoint.client.id>
+    <anypoint.client.secret>11b6DD12338348d9A4b0Db83aCCD8868</anypoint.client.secret>
+    <anypoint.org.id>2dc1098b-48e1-496e-9631-6fe1cf3bbda7</anypoint.org.id>
+    <cloudhub.environment>Sandbox</cloudhub.environment>
+    <cloudhub.target>Cloudhub-US-East-2</cloudhub.target>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.mule.tools.maven</groupId>
+        <artifactId>mule-maven-plugin</artifactId>
+        <version>${mule.maven.plugin.version}</version>
+        <extensions>true</extensions>
+        <configuration>
+          <classifier>mule-application</classifier>
+          <cloudhub2Deployment>
+            <uri>https://anypoint.mulesoft.com</uri>
+            <provider>MC</provider>
+            <environment>${cloudhub.environment}</environment>
+            <target>${cloudhub.target}</target>
+            <applicationName>muleops-governance-mcp</applicationName>
+            <muleVersion>${app.runtime}</muleVersion>
+            <replicas>1</replicas>
+            <connectedAppClientId>${anypoint.client.id}</connectedAppClientId>
+            <connectedAppClientSecret>${anypoint.client.secret}</connectedAppClientSecret>
+            <connectedAppGrantType>client_credentials</connectedAppGrantType>
+            <businessGroupId>${anypoint.org.id}</businessGroupId>
+          </cloudhub2Deployment>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.mule.connectors</groupId>
+      <artifactId>mule-http-connector</artifactId>
+      <version>1.10.3</version>
+      <classifier>mule-plugin</classifier>
+    </dependency>
+    <dependency>
+      <groupId>com.mulesoft.munit</groupId>
+      <artifactId>munit-runner</artifactId>
+      <version>3.3.0</version>
+      <classifier>mule-plugin</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.mulesoft.munit</groupId>
+      <artifactId>munit-tools</artifactId>
+      <version>3.3.0</version>
+      <classifier>mule-plugin</classifier>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <distributionManagement>
+    <repository>
+      <id>anypoint-exchange-v3</id>
+      <name>Anypoint Exchange V3</name>
+      <url>https://maven.anypoint.mulesoft.com/api/v3/organizations/2dc1098b-48e1-496e-9631-6fe1cf3bbda7/maven</url>
+    </repository>
+  </distributionManagement>
+
+  <repositories>
+    <repository>
+      <id>anypoint-exchange-v3</id>
+      <name>Anypoint Exchange V3</name>
+      <url>https://maven.anypoint.mulesoft.com/api/v3/maven</url>
+    </repository>
+    <repository>
+      <id>mulesoft-releases</id>
+      <name>MuleSoft Releases</name>
+      <url>https://repository.mulesoft.org/releases/</url>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>mulesoft-releases</id>
+      <name>MuleSoft Releases</name>
+      <url>https://repository.mulesoft.org/releases/</url>
+    </pluginRepository>
+  </pluginRepositories>
+</project>

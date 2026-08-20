@@ -1,0 +1,23 @@
+# Flex Gateway Policy: Rate Limiting
+# Prevents LLM loops from burning API credits
+# Apply to each agent provider instance independently
+
+apiVersion: gateway.mulesoft.com/v1alpha1
+kind: Policy
+metadata:
+  name: rate-limiting
+  namespace: muleops
+spec:
+  policyRef:
+    name: rate-limiting
+    namespace: mulesoft
+  config:
+    rateLimits:
+      - maximumRequests: 60
+        timePeriodInMilliseconds: 60000
+    keySelector: "#[attributes.headers['client_id']]"
+    clusterizable: true
+    exposeHeaders: false
+  rules:
+    - methods: GET, POST, PUT, DELETE, PATCH
+      uriTemplateRegex: ".*"

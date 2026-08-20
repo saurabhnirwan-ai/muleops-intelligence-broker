@@ -1,0 +1,9 @@
+{
+  "minMuleVersion": "4.9.16",
+  "name": "muleops-governance-mcp",
+  "javaSpecificationVersions": ["17"],
+  "configs": [
+    "global-config.xml",
+    "mcp-tools.xml"
+  ]
+}

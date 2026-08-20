@@ -1,0 +1,23 @@
+Service:
+  ServiceName: muleops-pagerduty-agent
+  SourceConfiguration:
+    ImageRepository:
+      ImageIdentifier: "<AWS_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/muleops-pagerduty-agent:1.0.0"
+      ImageRepositoryType: ECR
+      ImageConfiguration:
+        Port: "8080"
+        RuntimeEnvironmentVariables:
+          PAGERDUTY_API_TOKEN: "<YOUR_PAGERDUTY_API_TOKEN>"
+          AWS_REGION: "us-east-1"
+          BEDROCK_MODEL_ID: "anthropic.claude-sonnet-4-5"
+    AutoDeploymentsEnabled: false
+  InstanceConfiguration:
+    Cpu: "0.25 vCPU"
+    Memory: "0.5 GB"
+  HealthCheckConfiguration:
+    Protocol: HTTP
+    Path: /health
+    Interval: 30
+    Timeout: 10
+    HealthyThreshold: 2
+    UnhealthyThreshold: 3

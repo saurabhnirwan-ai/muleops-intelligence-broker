@@ -1,0 +1,31 @@
+# MuleOps Broker Configuration
+# Used by Agent Fabric when deploying the agent network
+
+broker:
+  id: broker-muleops
+  applicationName: muleops-broker
+  deploymentTarget: cloudhub2
+  region: us-east-1
+  replicas: 1
+  replicaSize: "0.1"
+  muleVersion: "4.9.16"
+
+llm:
+  provider: google
+  model: gemini-2.5-flash
+  apiKeyProperty: gemini.api.key
+  configuration:
+    temperature: 0.2
+    maxOutputTokens: 2048
+    topP: 0.8
+
+routing:
+  defaultAgent: agent-pagerduty-specialist
+  timeoutSeconds: 120
+  maxRetries: 2
+  retryDelayMs: 2000
+
+logging:
+  level: INFO
+  includeCorrelationId: true
+  includeRoutingDecision: true

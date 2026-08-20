@@ -1,0 +1,91 @@
+# MuleOps Broker — Routing Rules
+# Defines intent-to-agent routing logic for the broker's LLM
+
+routingRules:
+  - id: route-to-pagerduty
+    priority: 1
+    name: PagerDuty Routing
+    targetAgent: agent-pagerduty-specialist
+    conditions:
+      anyOf:
+        - field: query
+          operator: contains_any
+          values:
+            - "incident"
+            - "alert"
+            - "p1"
+            - "p2"
+            - "on-call"
+            - "on call"
+            - "oncall"
+            - "acknowledge"
+            - "pagerduty"
+            - "escalation"
+            - "triggered"
+            - "sev1"
+            - "sev2"
+            - "who is on call"
+            - "schedule"
+    systemPromptAddition: |
+      The user's query is related to PagerDuty incident management or on-call operations.
+      Use the PagerDuty specialist agent to look up incidents, on-call schedules,
+      escalation policies, and service information. Always include incident IDs,
+      timestamps, and current status in your response.
+
+  - id: route-to-splunk
+    priority: 1
+    name: Splunk Routing
+    targetAgent: agent-splunk-ops
+    conditions:
+      anyOf:
+        - field: query
+          operator: contains_any
+          values:
+            - "log"
+            - "logs"
+            - "error"
+            - "exception"
+            - "splunk"
+            - "search"
+            - "spl"
+            - "trace"
+            - "ado"
+            - "observability"
+            - "timeout"
+            - "stack trace"
+    systemPromptAddition: |
+      The user's query is related to log search, error analysis, or Splunk observability.
+      Use the Splunk specialist agent to search logs, identify patterns, and analyze
+      application behavior. Include log counts, error frequencies, and time ranges
+      in your response.
+
+  - id: route-to-integration
+    priority: 1
+    name: Integration System Routing
+    targetAgent: agent-integration-system
+    conditions:
+      anyOf:
+        - field: query
+          operator: contains_any
+          values:
+            - "vcore"
+            - "application"
+            - "cloudhub"
+            - "runtime"
+            - "java 17"
+            - "java17"
+            - "static ip"
+            - "business group"
+            - "bt-integration"
+            - "deployment"
+            - "worker"
+    systemPromptAddition: |
+      The user's query is related to CloudHub application metadata or runtime monitoring.
+      Use the Integration System agent to query application counts, vCore usage,
+      runtime versions, and deployment status. Format results as clear tables
+      when returning multiple applications.
+
+fallback:
+  targetAgent: agent-pagerduty-specialist
+  logLevel: WARN
+  message: "Could not determine agent from query. Defaulting to PagerDuty specialist."

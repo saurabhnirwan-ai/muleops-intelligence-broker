@@ -1,0 +1,93 @@
+# MuleOps Agent Network — Skill Domain Definitions
+# Defines the 5 operational skill domains and their routing targets
+
+domains:
+  - id: pagerduty-incident-management
+    name: PagerDuty Incident Management
+    agent: agent-pagerduty-specialist
+    description: Active incidents, incident history, acknowledgment, resolution, on-call status
+    priority: 1
+    keywords:
+      - incident
+      - alert
+      - p1
+      - p2
+      - p3
+      - on-call
+      - oncall
+      - on call
+      - acknowledge
+      - resolve
+      - pagerduty
+      - triggered
+      - escalation
+      - responder
+      - sev1
+      - sev2
+
+  - id: pagerduty-service-team-ops
+    name: PagerDuty Service and Team Operations
+    agent: agent-pagerduty-specialist
+    description: PagerDuty services, teams, schedules, escalation policies, on-call rotations
+    priority: 2
+    keywords:
+      - service
+      - team
+      - schedule
+      - rotation
+      - escalation policy
+      - policy
+      - stakeholder
+
+  - id: splunk-log-search
+    name: Splunk Log Search and Analysis
+    agent: agent-splunk-ops
+    description: Application log search, error pattern detection, SPL queries, request tracing
+    priority: 1
+    keywords:
+      - log
+      - logs
+      - error
+      - exception
+      - splunk
+      - search
+      - spl
+      - trace
+      - stack trace
+      - timeout
+      - latency
+      - performance
+      - pattern
+
+  - id: ado-alert-monitoring
+    name: ADO Alert Monitoring
+    agent: agent-splunk-ops
+    description: Application Data Observability alerts, Splunk saved searches, alert history
+    priority: 2
+    keywords:
+      - ado
+      - ado alert
+      - observability
+      - saved search
+      - splunk alert
+      - monitor
+      - notification
+
+  - id: cloudhub-app-monitoring
+    name: CloudHub Application Monitoring
+    agent: agent-integration-system
+    description: CloudHub app metadata, vCore usage, runtime versions, static IPs, business groups
+    priority: 1
+    keywords:
+      - vcore
+      - application
+      - cloudhub
+      - runtime
+      - java
+      - static ip
+      - business group
+      - bt-integration
+      - deployment
+      - worker
+      - environment
+      - mule version

@@ -1,0 +1,23 @@
+Service:
+  ServiceName: muleops-splunk-agent
+  SourceConfiguration:
+    ImageRepository:
+      ImageIdentifier: "<AWS_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/muleops-splunk-agent:1.0.0"
+      ImageRepositoryType: ECR
+      ImageConfiguration:
+        Port: "8080"
+        RuntimeEnvironmentVariables:
+          SPLUNK_HOST: "<YOUR_SPLUNK_HOST>"
+          SPLUNK_PORT: "8089"
+          SPLUNK_SCHEME: "https"
+          AWS_REGION: "us-east-1"
+          BEDROCK_MODEL_ID: "anthropic.claude-sonnet-4-5"
+    AutoDeploymentsEnabled: false
+  InstanceConfiguration:
+    Cpu: "0.25 vCPU"
+    Memory: "0.5 GB"
+  HealthCheckConfiguration:
+    Protocol: HTTP
+    Path: /health
+    Interval: 30
+    Timeout: 10
